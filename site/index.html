@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TestTrust AI — Beyond Code Coverage</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#090d16',
+            panel: '#111827',
+            card: '#161f33',
+            borderDark: '#23304a',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar for code blocks and tables */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .code-area {
+      tab-size: 4;
+      caret-color: #38bdf8;
+    }
+    @keyframes pulseBorder {
+      0%, 100% { border-color: rgba(56, 189, 248, 0.35); }
+      50% { border-color: rgba(56, 189, 248, 0.85); }
+    }
+    .pipeline-active {
+      animation: pulseBorder 1.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-obsidian text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- Toast Notification Container (Replaces alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Responsible AI Modal -->
+  <div id="responsible-ai-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-panel border border-borderDark rounded-2xl max-w-xl w-full p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4 border-b border-borderDark pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Responsible AI & Calibrated Trust</h3>
+            <p class="text-xs text-slate-400">Governance & Verification Safeguards in TestTrust AI</p>
+          </div>
+        </div>
+        <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="py-4 space-y-3 text-sm text-slate-300 leading-relaxed">
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <p class="font-semibold text-sky-400 mb-1">1. Probabilistic AI vs. Deterministic Verification</p>
+          <p class="text-slate-400 text-xs">TestTrust AI strictly separates <span class="text-slate-200 font-medium">LLM-generated test suggestions & explanations</span> from deterministic execution evidence produced by <span class="text-slate-200 font-medium">Maven, JUnit 5, JaCoCo, and PIT</span>.</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <p class="font-semibold text-amber-400 mb-1">2. Mutation Score Is Evidence, Not Proof</p>
+          <p class="text-slate-400 text-xs">A high mutation score indicates strong fault-detection sensitivity against common syntactic bugs, but does not mathematically guarantee bug-free software or capture missing business specifications.</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <p class="font-semibold text-emerald-400 mb-1">3. Human-in-the-Loop & Sandboxed Execution</p>
+          <p class="text-slate-400 text-xs">Developers are prompted to review AI-proposed assertions before merging. Untrusted Java builds execute inside isolated containers with strict resource timeouts.</p>
+        </div>
+      </div>
+      <div class="pt-2 flex justify-end">
+        <button onclick="toggleModal(false)" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-sm transition">
+          Understood
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation & Header -->
+  <header class="border-b border-borderDark bg-panel/90 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <!-- Brand -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">TestTrust <span class="text-sky-400">AI</span></h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25">
+              Spring Boot • JUnit 5 • JaCoCo • PIT
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Beyond Code Coverage: Evidence-Based Reliability Evaluation for AI-Generated Java Tests</p>
+        </div>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex items-center gap-2.5">
+        <button onclick="toggleModal(true)" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Responsible AI</span>
+        </button>
+        <button onclick="exportReport()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Export Evidence JSON</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5-Stage Pipeline Status Bar -->
+    <div class="bg-slate-950/70 border-t border-borderDark/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 overflow-x-auto">
+        <div class="flex items-center justify-between min-w-[680px] gap-2 text-xs" id="pipeline-stepper">
+          <div data-step="1" class="step-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold">1</span>
+            <span>Java Source Input</span>
+          </div>
+          <span class="text-slate-600">→</span>
+          <div data-step="2" class="step-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold">2</span>
+            <span>AI JUnit 5 Generation</span>
+          </div>
+          <span class="text-slate-600">→</span>
+          <div data-step="3" class="step-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold">3</span>
+            <span>Maven Build & Exec</span>
+          </div>
+          <span class="text-slate-600">→</span>
+          <div data-step="4" class="step-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold">4</span>
+            <span>JaCoCo Coverage</span>
+          </div>
+          <span class="text-slate-600">→</span>
+          <div data-step="5" class="step-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold">5</span>
+            <span>PIT Mutation Testing</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Top Grid: Java Input (Left) + Trust Evidence Dashboard (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Java Source Input & Preset Selector (5 cols) -->
+      <section class="lg:col-span-5 bg-panel border border-borderDark rounded-2xl flex flex-col overflow-hidden shadow-xl">
+        <div class="p-4 border-b border-borderDark flex flex-wrap items-center justify-between gap-2 bg-slate-900/50">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              Java Target Class
+            </h2>
+            <p class="text-[11px] text-slate-400">Select a benchmark scenario or edit Java code</p>
+          </div>
+          <!-- Preset Selector -->
+          <select id="preset-select" onchange="loadPreset(this.value)" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-sky-500 font-mono">
+            <option value="discount">DiscountCalculator.java (Coverage Trap)</option>
+            <option value="bank">BankAccountService.java (Weak Assertions)</option>
+            <option value="password">PasswordValidator.java (Hardened Suite)</option>
+          </select>
+        </div>
+
+        <!-- File Tab Strip -->
+        <div class="px-4 py-2 bg-slate-950/90 border-b border-borderDark flex items-center justify-between text-xs font-mono text-slate-400">
+          <span id="active-filename" class="text-sky-300 font-medium">src/main/java/com/testtrust/DiscountCalculator.java</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">Java 17 • Maven</span>
+        </div>
+
+        <!-- Editable Code Area -->
+        <div class="relative flex-1 min-h-[300px] bg-[#0b101d]">
+          <textarea id="java-editor" spellcheck="false" class="code-area w-full h-full min-h-[300px] p-4 bg-transparent text-slate-200 font-mono text-xs leading-6 resize-none focus:outline-none"></textarea>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="p-4 border-t border-borderDark bg-slate-900/60 space-y-3">
+          <!-- Progress status bar (visible during run) -->
+          <div id="execution-status-box" class="hidden space-y-1.5">
+            <div class="flex justify-between text-[11px] font-mono">
+              <span id="execution-step-label" class="text-sky-400">Initializing Maven sandbox...</span>
+              <span id="execution-percent" class="text-slate-400">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="execution-progress-bar" class="h-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <button id="run-pipeline-btn" onclick="runTestTrustPipeline()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 transition active:scale-[0.99]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Run TestTrust AI Pipeline</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Column: Trust Evidence Dashboard (7 cols) -->
+      <section class="lg:col-span-7 bg-panel border border-borderDark rounded-2xl p-5 flex flex-col justify-between gap-5 shadow-xl">
+        <!-- Header & Trust Calibration Verdict -->
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-borderDark pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-bold text-white">Trust Evidence Dashboard</h2>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Deterministic Audit</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Comparing JaCoCo execution coverage against PIT fault-detection strength</p>
+          </div>
+          <div id="verdict-badge" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-semibold flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            <span id="verdict-text">Misleading Coverage — Weak Assertions</span>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <!-- Line Coverage -->
+          <div class="bg-card border border-borderDark rounded-xl p-3.5">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>JaCoCo Line</span>
+              <span class="text-[10px] font-mono text-sky-400">EXEC</span>
+            </div>
+            <div class="text-2xl font-extrabold text-white" id="metric-line-cov">100%</div>
+            <div class="text-[11px] text-slate-400 mt-1" id="metric-line-detail">14 / 14 lines hit</div>
+          </div>
+
+          <!-- Branch Coverage -->
+          <div class="bg-card border border-borderDark rounded-xl p-3.5">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>JaCoCo Branch</span>
+              <span class="text-[10px] font-mono text-sky-400">BRANCH</span>
+            </div>
+            <div class="text-2xl font-extrabold text-white" id="metric-branch-cov">100%</div>
+            <div class="text-[11px] text-slate-400 mt-1" id="metric-branch-detail">6 / 6 branches</div>
+          </div>
+
+          <!-- PIT Mutation Score -->
+          <div class="bg-card border border-borderDark rounded-xl p-3.5">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>PIT Mutation</span>
+              <span class="text-[10px] font-mono text-amber-400">TRUST</span>
+            </div>
+            <div class="text-2xl font-extrabold text-rose-400" id="metric-mutation-score">43%</div>
+            <div class="text-[11px] text-slate-400 mt-1" id="metric-gap-label">57% Coverage-Trust Gap</div>
+          </div>
+
+          <!-- Killed vs Survived -->
+          <div class="bg-card border border-borderDark rounded-xl p-3.5">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>Mutant Audit</span>
+              <span class="text-[10px] font-mono text-emerald-400">PIT</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-xl font-extrabold text-emerald-400" id="metric-killed">3</span>
+              <span class="text-xs text-slate-500">killed</span>
+              <span class="text-slate-600">/</span>
+              <span class="text-xl font-extrabold text-rose-400" id="metric-survived">4</span>
+              <span class="text-xs text-slate-500">survived</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1" id="metric-total-mutants">7 total mutants injected</div>
+          </div>
+        </div>
+
+        <!-- Visual Comparison Chart (Coverage vs Mutation Effectiveness) -->
+        <div class="bg-slate-950/70 border border-borderDark rounded-xl p-4 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Coverage vs. Actual Bug-Catching Evidence</h3>
+            <div class="flex items-center gap-4 text-[11px] text-slate-400">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sky-400"></span> JaCoCo Coverage</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> PIT Mutation Score</span>
+            </div>
+          </div>
+
+          <div class="space-y-3.5">
+            <!-- Bar 1: Line Coverage -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">JaCoCo Line Coverage (Code Executed)</span>
+                <span class="font-mono font-semibold text-sky-400" id="bar-line-text">100%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-line-fill" class="h-full bg-sky-400 rounded-full transition-all duration-700" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Bar 2: Branch Coverage -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">JaCoCo Branch Coverage (Paths Traversed)</span>
+                <span class="font-mono font-semibold text-indigo-400" id="bar-branch-text">100%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-branch-fill" class="h-full bg-indigo-400 rounded-full transition-all duration-700" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Bar 3: PIT Mutation Score -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">PIT Mutation Score (Injected Bugs Caught)</span>
+                <span class="font-mono font-semibold text-rose-400" id="bar-mutation-text">43%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div id="bar-mutation-fill" class="h-full bg-rose-500 rounded-full transition-all duration-700" style="width: 43%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Insight Callout Banner -->
+          <div id="gap-callout" class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200">
+            <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p id="gap-callout-text">
+              <strong>False Confidence Alert:</strong> AI-generated JUnit 5 tests execute 100% of lines, yet <strong>4 out of 7 PIT mutants survived</strong> because boundary operators (<code>&gt;=</code>) and negative inputs are never asserted.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Bottom Section: Tabbed Detailed Inspection Panel -->
+    <section class="bg-panel border border-borderDark rounded-2xl overflow-hidden shadow-xl">
+      <!-- Tabs Header -->
+      <div class="border-b border-borderDark bg-slate-900/60 px-4 pt-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+          <button onclick="switchTab('tests')" id="tab-btn-tests" class="tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-sky-400 text-sky-300 bg-slate-800/70 transition whitespace-nowrap">
+            1. Generated JUnit 5 Tests
+          </button>
+          <button onclick="switchTab('mutants')" id="tab-btn-mutants" class="tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+            2. PIT Mutation Report <span id="tab-mutant-badge" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500/20 text-rose-300">4 Survived</span>
+          </button>
+          <button onclick="switchTab('explanations')" id="tab-btn-explanations" class="tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+            3. AI Weakness Explanations & Guidance
+          </button>
+        </div>
+
+        <!-- Strengthen Tests CTA Button -->
+        <div class="pb-2">
+          <button id="strengthen-btn" onclick="strengthenTestsWithAI()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span id="strengthen-btn-text">Strengthen Weak Tests with AI</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Generated JUnit 5 Tests -->
+      <div id="tab-panel-tests" class="p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-medium">AI-Generated Artifact</span>
+            <span id="test-filename" class="font-mono text-slate-300">src/test/java/com/testtrust/DiscountCalculatorTest.java</span>
+          </div>
+          <button onclick="copyTestCode()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition">
+            Copy JUnit 5 Code
+          </button>
+        </div>
+
+        <pre id="junit-code-block" class="p-4 rounded-xl bg-[#0b101d] border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-6"></pre>
+      </div>
+
+      <!-- Tab 2: PIT Mutation Report -->
+      <div id="tab-panel-mutants" class="p-5 hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <p>PIT injects bytecode mutations into compiled Java classes and re-runs JUnit 5 tests to verify whether each fault is detected.</p>
+          <span class="font-mono text-slate-300">Engine: PIT 1.15.3 • Mutators: DEFAULTS</span>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-borderDark">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-900/90 border-b border-borderDark text-slate-400 font-semibold">
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">Line</th>
+                <th class="py-3 px-4">PIT Mutator</th>
+                <th class="py-3 px-4">Injected Bytecode Change</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Diagnostic Note</th>
+              </tr>
+            </thead>
+            <tbody id="mutants-table-body" class="divide-y divide-borderDark/70 bg-slate-950/40">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: AI Weakness Explanations & Responsible AI -->
+      <div id="tab-panel-explanations" class="p-5 hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="explanations-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Responsible AI Footer Strip inside Tab 3 -->
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div class="space-y-1">
+            <span class="text-amber-400 font-semibold uppercase tracking-wider text-[11px]">Responsible AI Calibration Notice</span>
+            <p class="text-slate-400">Explanations above are synthesized by an LLM from deterministic PIT XML/HTML survival logs. Always review AI-suggested assertions for domain accuracy before committing.</p>
+          </div>
+          <button onclick="toggleModal(true)" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">
+            View Governance Policy
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-borderDark bg-panel/60 py-4 px-4 sm:px-8 text-center text-xs text-slate-500">
+    TestTrust AI • International AI Builders Hackathon Prototype • Java + Spring Boot + JUnit 5 + JaCoCo + PIT Mutation Testing
+  </footer>
+
+  <!-- Interactive Application Logic -->
+  <script>
+    // Dataset containing 3 realistic Java scenarios with initial "Coverage Trap" vs "Hardened" states
+    const SCENARIOS = {
+      discount: {
+        fileName: "src/main/java/com/testtrust/DiscountCalculator.java",
+        testFileName: "src/test/java/com/testtrust/DiscountCalculatorTest.java",
+        javaCode: `package com.testtrust;
+
+public class DiscountCalculator {
+
+    /**
+     * Applies tiered customer discounts:
+     * - Premium members with order >= 100 get 20% off
+     * - Standard orders >= 100 get 10% off
+     * - Orders below 100 get 0% discount
+     */
+    public double calculateFinalPrice(double amount, boolean isPremium) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount cannot be negative");
+        }
+        double discountRate = 0.0;
+        if (amount >= 100.0) {
+            discountRate = isPremium ? 0.20 : 0.10;
+        }
+        return amount - (amount * discountRate);
+    }
+}`,
+        initial: {
+          lineCov: 100,
+          lineDetail: "10 / 10 lines hit",
+          branchCov: 100,
+          branchDetail: "6 / 6 branches",
+          mutationScore: 43,
+          killed: 3,
+          survived: 4,
+          verdict: "Misleading Coverage — Weak Assertions",
+          verdictType: "danger",
+          callout: "<strong>False Confidence Alert:</strong> AI-generated JUnit 5 tests achieve <strong>100% JaCoCo line & branch coverage</strong>, yet <strong>4 out of 7 PIT mutants survived</strong> because exact boundary values (<code>amount == 100.0</code>) and negative inputs were never tested.",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DiscountCalculatorTest {
+
+    private final DiscountCalculator calculator = new DiscountCalculator();
+
+    @Test
+    @DisplayName("Should apply discount for premium user")
+    void testPremiumOrder() {
+        // [WEAK ASSERTION]: Uses 200.0, missing the exact 100.0 boundary!
+        double result = calculator.calculateFinalPrice(200.0, true);
+        assertTrue(result < 200.0); // [WEAK]: Does not verify exact 160.0 output
+    }
+
+    @Test
+    @DisplayName("Should return original price for small order")
+    void testSmallOrder() {
+        double result = calculator.calculateFinalPrice(50.0, false);
+        assertEquals(50.0, result);
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount < 0  →  amount <= 0", status: "SURVIVED", note: "No test checks amount == 0.0 boundary." },
+            { id: "M-02", line: 12, mutator: "NegateConditionalsMutator", diff: "amount < 0  →  amount >= 0", status: "KILLED", note: "Caught by testSmallOrder(50.0) throwing exception." },
+            { id: "M-03", line: 16, mutator: "ConditionalsBoundaryMutator", diff: "amount >= 100.0  →  amount > 100.0", status: "SURVIVED", note: "Test used 200.0 instead of exact boundary 100.0." },
+            { id: "M-04", line: 17, mutator: "InlineConstantMutator", diff: "0.20  →  0.10", status: "SURVIVED", note: "assertTrue(result < 200.0) passed even with wrong discount rate!" },
+            { id: "M-05", line: 17, mutator: "NegateConditionalsMutator", diff: "isPremium ?  →  !isPremium ?", status: "SURVIVED", note: "Weak inequality assertion failed to distinguish 20% vs 10%." },
+            { id: "M-06", line: 19, mutator: "MathMutator", diff: "amount - (...)  →  amount + (...)", status: "KILLED", note: "Caught because result became > 200.0." },
+            { id: "M-07", line: 19, mutator: "MathMutator", diff: "amount * discountRate  →  amount / discountRate", status: "KILLED", note: "Caught by testSmallOrder(50.0)." }
+          ],
+          explanations: [
+            {
+              title: "Boundary Blindness on Line 16 (amount >= 100.0)",
+              severity: "High Risk",
+              description: "The initial AI test passed 200.0 as an input. Because 200.0 satisfies both >= 100.0 and > 100.0, PIT's ConditionalsBoundaryMutator survived undetected.",
+              fix: "Add an explicit boundary test at amount = 100.0 expecting 80.0 (premium) and 90.0 (standard)."
+            },
+            {
+              title: "Overly Permissive Assertion on Line 17",
+              severity: "Critical Weakness",
+              description: "Using assertTrue(result < 200.0) only verifies that *some* discount was applied, allowing a mutant that swaps 20% for 10% to pass completely unnoticed.",
+              fix: "Replace loose inequality checks with exact assertEquals(160.0, result, 0.001)."
+            }
+          ]
+        },
+        hardened: {
+          lineCov: 100,
+          lineDetail: "10 / 10 lines hit",
+          branchCov: 100,
+          branchDetail: "6 / 6 branches",
+          mutationScore: 100,
+          killed: 7,
+          survived: 0,
+          verdict: "High Evidence Reliability — Verified",
+          verdictType: "success",
+          callout: "<strong>Trust Calibrated:</strong> AI-strengthened assertions now lock down exact boundary values (<code>100.0</code>, <code>0.0</code>), negative input exceptions, and exact discount calculations. <strong>All 7 PIT mutants killed!</strong>",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DiscountCalculatorTest {
+
+    private final DiscountCalculator calculator = new DiscountCalculator();
+
+    @Test
+    @DisplayName("Exact boundary 100.0 applies 20% premium and 10% standard discount")
+    void testExactBoundaryDiscounts() {
+        assertEquals(80.0, calculator.calculateFinalPrice(100.0, true), 0.001);
+        assertEquals(90.0, calculator.calculateFinalPrice(100.0, false), 0.001);
+    }
+
+    @Test
+    @DisplayName("Zero and below-threshold amounts receive zero discount")
+    void testZeroAndSmallOrders() {
+        assertEquals(0.0, calculator.calculateFinalPrice(0.0, true), 0.001);
+        assertEquals(99.99, calculator.calculateFinalPrice(99.99, false), 0.001);
+    }
+
+    @Test
+    @DisplayName("Negative order amount throws IllegalArgumentException")
+    void testNegativeAmountThrows() {
+        assertThrows(IllegalArgumentException.class,
+            () -> calculator.calculateFinalPrice(-0.01, true));
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount < 0  →  amount <= 0", status: "KILLED", note: "Killed by testZeroAndSmallOrders(0.0)." },
+            { id: "M-02", line: 12, mutator: "NegateConditionalsMutator", diff: "amount < 0  →  amount >= 0", status: "KILLED", note: "Killed by testNegativeAmountThrows()." },
+            { id: "M-03", line: 16, mutator: "ConditionalsBoundaryMutator", diff: "amount >= 100.0  →  amount > 100.0", status: "KILLED", note: "Killed by exact 100.0 boundary assertion." },
+            { id: "M-04", line: 17, mutator: "InlineConstantMutator", diff: "0.20  →  0.10", status: "KILLED", note: "Killed by exact assertEquals(80.0, ...)." },
+            { id: "M-05", line: 17, mutator: "NegateConditionalsMutator", diff: "isPremium ?  →  !isPremium ?", status: "KILLED", note: "Killed by testing both true and false flags at 100.0." },
+            { id: "M-06", line: 19, mutator: "MathMutator", diff: "amount - (...)  →  amount + (...)", status: "KILLED", note: "Killed by exact delta assertion." },
+            { id: "M-07", line: 19, mutator: "MathMutator", diff: "amount * discountRate  →  amount / discountRate", status: "KILLED", note: "Killed by exact delta assertion." }
+          ],
+          explanations: [
+            {
+              title: "Boundary Conditions Locked Down",
+              severity: "Resolved",
+              description: "Exact inputs at 0.0, 99.99, and 100.0 eliminate off-by-one relational operator vulnerabilities across all conditional branches.",
+              fix: "Verified via PIT ConditionalsBoundaryMutator execution."
+            },
+            {
+              title: "Exact Value & Exception Contracts Enforced",
+              severity: "Resolved",
+              description: "Replacing boolean inequalities with exact delta assertions and assertThrows ensures wrong discount rates or missing validation fail immediately.",
+              fix: "Verified via PIT InlineConstantMutator & NegateConditionalsMutator."
+            }
+          ]
+        }
+      },
+
+      bank: {
+        fileName: "src/main/java/com/testtrust/BankAccountService.java",
+        testFileName: "src/test/java/com/testtrust/BankAccountServiceTest.java",
+        javaCode: `package com.testtrust;
+
+public class BankAccountService {
+
+    private double balance;
+
+    public BankAccountService(double initialBalance) {
+        this.balance = initialBalance;
+    }
+
+    public boolean withdraw(double amount) {
+        if (amount <= 0 || amount > balance) {
+            return false;
+        }
+        balance -= amount;
+        auditWithdrawal(amount);
+        return true;
+    }
+
+    protected void auditWithdrawal(double amount) {
+        // Logs transaction to compliance ledger
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+}`,
+        initial: {
+          lineCov: 92,
+          lineDetail: "11 / 12 lines hit",
+          branchCov: 100,
+          branchDetail: "4 / 4 branches",
+          mutationScore: 40,
+          killed: 2,
+          survived: 3,
+          verdict: "State Mutation Blindspot",
+          verdictType: "danger",
+          callout: "<strong>Side-Effect Blindspot:</strong> The AI test checks that <code>withdraw()</code> returns <code>true</code>, achieving 92% coverage, but <strong>never asserts the updated account balance</strong> or audit log call!",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class BankAccountServiceTest {
+
+    @Test
+    void testWithdrawSuccess() {
+        BankAccountService account = new BankAccountService(500.0);
+        // [WEAK]: Only checks boolean return value, ignores balance state!
+        assertTrue(account.withdraw(200.0));
+    }
+
+    @Test
+    void testWithdrawTooMuch() {
+        BankAccountService account = new BankAccountService(100.0);
+        assertFalse(account.withdraw(150.0));
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount <= 0  →  amount < 0", status: "SURVIVED", note: "Zero withdrawal amount (0.0) was never tested." },
+            { id: "M-02", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount > balance  →  amount >= balance", status: "SURVIVED", note: "Full balance withdrawal (exact balance) was not tested." },
+            { id: "M-03", line: 15, mutator: "MathMutator", diff: "balance -= amount  →  balance += amount", status: "SURVIVED", note: "CRITICAL: Adding instead of subtracting still returned true!" },
+            { id: "M-04", line: 16, mutator: "VoidMethodCallMutator", diff: "removed call to auditWithdrawal()", status: "SURVIVED", note: "No spy/verification checked compliance audit logging." },
+            { id: "M-05", line: 17, mutator: "BooleanReturnValsMutator", diff: "return true  →  return false", status: "KILLED", note: "Caught by assertTrue(account.withdraw(200.0))." }
+          ],
+          explanations: [
+            {
+              title: "State Mutation Escaped on Line 15 (balance -= amount)",
+              severity: "Critical Bug Risk",
+              description: "PIT changed 'balance -= amount' to 'balance += amount' (crediting the user instead of debiting!). Because the AI test only asserted the boolean return flag and never called getBalance(), the mutant survived.",
+              fix: "Assert exact post-condition state: assertEquals(300.0, account.getBalance(), 0.001)."
+            },
+            {
+              title: "Exact Balance Withdrawal Boundary (amount > balance)",
+              severity: "Medium Risk",
+              description: "Withdrawing the exact full balance should succeed, but no test verified withdraw(500.0) on a 500.0 balance.",
+              fix: "Add a boundary test withdrawing 100% of available funds and verifying balance == 0.0."
+            }
+          ]
+        },
+        hardened: {
+          lineCov: 100,
+          lineDetail: "12 / 12 lines hit",
+          branchCov: 100,
+          branchDetail: "4 / 4 branches",
+          mutationScore: 100,
+          killed: 5,
+          survived: 0,
+          verdict: "High Evidence Reliability — Verified",
+          verdictType: "success",
+          callout: "<strong>State & Side-Effects Verified:</strong> Post-withdrawal balance deltas, full-balance edge cases, zero-amount rejections, and compliance audit calls are now strictly verified.",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.Test;
+import java.util.concurrent.atomic.AtomicBoolean;
+import static org.junit.jupiter.api.Assertions.*;
+
+class BankAccountServiceTest {
+
+    @Test
+    void testWithdrawUpdatesBalanceAndAudits() {
+        AtomicBoolean audited = new AtomicBoolean(false);
+        BankAccountService account = new BankAccountService(500.0) {
+            @Override
+            protected void auditWithdrawal(double amount) {
+                audited.set(amount == 200.0);
+            }
+        };
+
+        assertTrue(account.withdraw(200.0));
+        assertEquals(300.0, account.getBalance(), 0.001);
+        assertTrue(audited.get(), "Compliance audit must be triggered");
+    }
+
+    @Test
+    void testBoundaryWithdrawals() {
+        BankAccountService account = new BankAccountService(100.0);
+        assertFalse(account.withdraw(0.0));
+        assertTrue(account.withdraw(100.0));
+        assertEquals(0.0, account.getBalance(), 0.001);
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount <= 0  →  amount < 0", status: "KILLED", note: "Killed by assertFalse(account.withdraw(0.0))." },
+            { id: "M-02", line: 12, mutator: "ConditionalsBoundaryMutator", diff: "amount > balance  →  amount >= balance", status: "KILLED", note: "Killed by exact full-balance withdrawal test." },
+            { id: "M-03", line: 15, mutator: "MathMutator", diff: "balance -= amount  →  balance += amount", status: "KILLED", note: "Killed by assertEquals(300.0, account.getBalance())." },
+            { id: "M-04", line: 16, mutator: "VoidMethodCallMutator", diff: "removed call to auditWithdrawal()", status: "KILLED", note: "Killed by audit flag verification." },
+            { id: "M-05", line: 17, mutator: "BooleanReturnValsMutator", diff: "return true  →  return false", status: "KILLED", note: "Killed by assertTrue check." }
+          ],
+          explanations: [
+            {
+              title: "Post-Condition Balance Delta Verified",
+              severity: "Resolved",
+              description: "Asserting getBalance() after every withdrawal guarantees arithmetic sign flips or wrong deductions are caught immediately.",
+              fix: "Verified via PIT MathMutator."
+            },
+            {
+              title: "Void Side-Effect Call Verified",
+              severity: "Resolved",
+              description: "Overriding/spying on auditWithdrawal() ensures compliance side-effects cannot be silently deleted.",
+              fix: "Verified via PIT VoidMethodCallMutator."
+            }
+          ]
+        }
+      },
+
+      password: {
+        fileName: "src/main/java/com/testtrust/PasswordValidator.java",
+        testFileName: "src/test/java/com/testtrust/PasswordValidatorTest.java",
+        javaCode: `package com.testtrust;
+
+public class PasswordValidator {
+
+    public boolean isValid(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        boolean hasDigit = false;
+        boolean hasUpper = false;
+        for (char c : password.toCharArray()) {
+            if (Character.isDigit(c)) hasDigit = true;
+            if (Character.isUpperCase(c)) hasUpper = true;
+        }
+        return hasDigit && hasUpper;
+    }
+}`,
+        initial: {
+          lineCov: 96,
+          lineDetail: "11 / 11 lines hit",
+          branchCov: 90,
+          branchDetail: "9 / 10 branches",
+          mutationScore: 91,
+          killed: 10,
+          survived: 1,
+          verdict: "High Evidence Reliability — Verified",
+          verdictType: "success",
+          callout: "<strong>Strong Test Suite:</strong> Both JaCoCo coverage (96%) and PIT Mutation Score (91%) are closely aligned. Only 1 minor length boundary mutant (<code>length == 8</code>) remains.",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class PasswordValidatorTest {
+
+    private final PasswordValidator validator = new PasswordValidator();
+
+    @Test
+    void testValidAndInvalidPasswords() {
+        assertFalse(validator.isValid(null));
+        assertFalse(validator.isValid("Ab1"));
+        assertFalse(validator.isValid("lowercase123"));
+        assertFalse(validator.isValid("NoDigitsHere"));
+        assertTrue(validator.isValid("SecurePass9"));
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 6, mutator: "NegateConditionalsMutator", diff: "password == null  →  password != null", status: "KILLED", note: "Killed by null input check." },
+            { id: "M-02", line: 6, mutator: "ConditionalsBoundaryMutator", diff: "length() < 8  →  length() <= 8", status: "SURVIVED", note: "Exact 8-character valid password not tested." },
+            { id: "M-03", line: 12, mutator: "NegateConditionalsMutator", diff: "isDigit(c)  →  !isDigit(c)", status: "KILLED", note: "Killed by NoDigitsHere assertion." },
+            { id: "M-04", line: 13, mutator: "NegateConditionalsMutator", diff: "isUpperCase(c)  →  !isUpperCase(c)", status: "KILLED", note: "Killed by lowercase123 assertion." },
+            { id: "M-05", line: 15, mutator: "BooleanReturnValsMutator", diff: "hasDigit && hasUpper  →  hasDigit || hasUpper", status: "KILLED", note: "Killed by single-criteria negative test cases." }
+          ],
+          explanations: [
+            {
+              title: "Minor Boundary Gap at Exact 8 Characters",
+              severity: "Low Risk",
+              description: "All logical combinations (missing digit, missing uppercase, null) are thoroughly killed. Adding an exact 8-char password ('Valid123') will bring mutation score to 100%.",
+              fix: "Add assertTrue(validator.isValid(\"Valid123\")) and assertFalse(validator.isValid(\"Short12\"))."
+            }
+          ]
+        },
+        hardened: {
+          lineCov: 100,
+          lineDetail: "11 / 11 lines hit",
+          branchCov: 100,
+          branchDetail: "10 / 10 branches",
+          mutationScore: 100,
+          killed: 11,
+          survived: 0,
+          verdict: "High Evidence Reliability — 100% Killed",
+          verdictType: "success",
+          callout: "<strong>Maximum Calibrated Confidence:</strong> All boundary lengths (7 vs 8 chars) and character predicate combinations are verified with 100% mutation score.",
+          testCode: `package com.testtrust;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class PasswordValidatorTest {
+
+    private final PasswordValidator validator = new PasswordValidator();
+
+    @Test
+    void testAllPasswordConstraintsAndBoundaries() {
+        assertFalse(validator.isValid(null));
+        assertFalse(validator.isValid("Short1A"));      // 7 chars (boundary - 1)
+        assertTrue(validator.isValid("Exact12A"));      // 8 chars (exact boundary)
+        assertFalse(validator.isValid("lowercase123")); // missing uppercase
+        assertFalse(validator.isValid("NoDigitsHere")); // missing digit
+    }
+}`,
+          mutants: [
+            { id: "M-01", line: 6, mutator: "NegateConditionalsMutator", diff: "password == null  →  password != null", status: "KILLED", note: "Killed by null input check." },
+            { id: "M-02", line: 6, mutator: "ConditionalsBoundaryMutator", diff: "length() < 8  →  length() <= 8", status: "KILLED", note: "Killed by Exact12A (8 chars) assertion." },
+            { id: "M-03", line: 12, mutator: "NegateConditionalsMutator", diff: "isDigit(c)  →  !isDigit(c)", status: "KILLED", note: "Killed by NoDigitsHere assertion." },
+            { id: "M-04", line: 13, mutator: "NegateConditionalsMutator", diff: "isUpperCase(c)  →  !isUpperCase(c)", status: "KILLED", note: "Killed by lowercase123 assertion." },
+            { id: "M-05", line: 15, mutator: "BooleanReturnValsMutator", diff: "hasDigit && hasUpper  →  hasDigit || hasUpper", status: "KILLED", note: "Killed by single-criteria negative test cases." }
+          ],
+          explanations: [
+            {
+              title: "Complete Boundary & Predicate Verification",
+              severity: "Resolved",
+              description: "7-character and 8-character boundary cases confirm exact '< 8' length enforcement.",
+              fix: "All PIT mutators killed."
+            }
+          ]
+        }
+      }
+    };
+
+    // Application State
+    let currentPresetKey = 'discount';
+    let isHardened = false;
+    let isRunning = false;
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPreset('discount');
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = type === 'success'
+        ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200'
+        : 'bg-slate-900/95 border-sky-500/40 text-sky-200';
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl border shadow-xl text-xs font-medium flex items-center gap-2 transition-all duration-300 ${colors}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function toggleModal(show) {
+      const modal = document.getElementById('responsible-ai-modal');
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function loadPreset(key) {
+      currentPresetKey = key;
+      isHardened = false;
+      const scenario = SCENARIOS[key];
+      document.getElementById('active-filename').textContent = scenario.fileName;
+      document.getElementById('test-filename').textContent = scenario.testFileName;
+      document.getElementById('java-editor').value = scenario.javaCode;
+      renderDashboard();
+    }
+
+    function renderDashboard() {
+      const scenario = SCENARIOS[currentPresetKey];
+      const data = isHardened ? scenario.hardened : scenario.initial;
+
+      // Update Metrics
+      document.getElementById('metric-line-cov').textContent = `${data.lineCov}%`;
+      document.getElementById('metric-line-detail').textContent = data.lineDetail;
+      document.getElementById('metric-branch-cov').textContent = `${data.branchCov}%`;
+      document.getElementById('metric-branch-detail').textContent = data.branchDetail;
+
+      const mutScoreEl = document.getElementById('metric-mutation-score');
+      mutScoreEl.textContent = `${data.mutationScore}%`;
+      mutScoreEl.className = `text-2xl font-extrabold ${data.mutationScore >= 80 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const gap = Math.max(0, data.lineCov - data.mutationScore);
+      document.getElementById('metric-gap-label').textContent = `${gap}% Coverage-Trust Gap`;
+
+      document.getElementById('metric-killed').textContent = data.killed;
+      document.getElementById('metric-survived').textContent = data.survived;
+      document.getElementById('metric-total-mutants').textContent = `${data.killed + data.survived} total mutants injected`;
+
+      // Update Verdict Badge
+      const verdictBadge = document.getElementById('verdict-badge');
+      const verdictText = document.getElementById('verdict-text');
+      verdictText.textContent = data.verdict;
+      if (data.verdictType === 'success') {
+        verdictBadge.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs font-semibold flex items-center gap-2';
+        verdictBadge.querySelector('span').className = 'w-2 h-2 rounded-full bg-emerald-400';
+      } else {
+        verdictBadge.className = 'px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-semibold flex items-center gap-2';
+        verdictBadge.querySelector('span').className = 'w-2 h-2 rounded-full bg-rose-400 animate-pulse';
+      }
+
+      // Update Bars
+      document.getElementById('bar-line-text').textContent = `${data.lineCov}%`;
+      document.getElementById('bar-line-fill').style.width = `${data.lineCov}%`;
+
+      document.getElementById('bar-branch-text').textContent = `${data.branchCov}%`;
+      document.getElementById('bar-branch-fill').style.width = `${data.branchCov}%`;
+
+      const barMutText = document.getElementById('bar-mutation-text');
+      const barMutFill = document.getElementById('bar-mutation-fill');
+      barMutText.textContent = `${data.mutationScore}%`;
+      barMutText.className = `font-mono font-semibold ${data.mutationScore >= 80 ? 'text-emerald-400' : 'text-rose-400'}`;
+      barMutFill.style.width = `${data.mutationScore}%`;
+      barMutFill.className = `h-full rounded-full transition-all duration-700 ${data.mutationScore >= 80 ? 'bg-emerald-400' : 'bg-rose-500'}`;
+
+      // Update Callout Banner
+      const calloutBox = document.getElementById('gap-callout');
+      document.getElementById('gap-callout-text').innerHTML = data.callout;
+      if (data.verdictType === 'success') {
+        calloutBox.className = 'p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-xs text-emerald-200';
+      } else {
+        calloutBox.className = 'p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200';
+      }
+
+      // Update Tab 1: JUnit 5 Code
+      document.getElementById('junit-code-block').textContent = data.testCode;
+
+      // Update Tab 2: PIT Mutants Table
+      const badge = document.getElementById('tab-mutant-badge');
+      if (data.survived > 0) {
+        badge.textContent = `${data.survived} Survived`;
+        badge.className = 'ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500/20 text-rose-300';
+      } else {
+        badge.textContent = '0 Survived';
+        badge.className = 'ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300';
+      }
+
+      const tbody = document.getElementById('mutants-table-body');
+      tbody.innerHTML = data.mutants.map(m => {
+        const isKilled = m.status === 'KILLED';
+        const statusBadge = isKilled
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-[11px] font-semibold">KILLED</span>`
+          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-300 font-mono text-[11px] font-semibold">SURVIVED</span>`;
+        return `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-4 font-mono text-slate-400">${m.id}</td>
+            <td class="py-3 px-4 font-mono text-sky-400">L${m.line}</td>
+            <td class="py-3 px-4 font-mono text-slate-200">${m.mutator}</td>
+            <td class="py-3 px-4 font-mono text-amber-300 bg-slate-950/60">${m.diff}</td>
+            <td class="py-3 px-4">${statusBadge}</td>
+            <td class="py-3 px-4 text-slate-400">${m.note}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Update Tab 3: AI Explanations
+      const expGrid = document.getElementById('explanations-grid');
+      expGrid.innerHTML = data.explanations.map(exp => {
+        const isResolved = exp.severity === 'Resolved';
+        const pillClass = isResolved
+          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+          : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+        return `
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-borderDark space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <h4 class="text-sm font-bold text-white">${exp.title}</h4>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pillClass}">${exp.severity}</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">${exp.description}</p>
+            <div class="pt-1 text-xs text-sky-300 font-medium">
+              Recommendation: <span class="text-slate-300 font-normal">${exp.fix}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Update Strengthen Button State
+      const strengthenBtn = document.getElementById('strengthen-btn');
+      const strengthenText = document.getElementById('strengthen-btn-text');
+      if (isHardened) {
+        strengthenText.textContent = 'AI Hardened Suite Active (100% Killed)';
+        strengthenBtn.className = 'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-emerald-400 text-xs font-semibold cursor-default';
+      } else {
+        strengthenText.textContent = 'Strengthen Weak Tests with AI';
+        strengthenBtn.className = 'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition';
+      }
+    }
+
+    function switchTab(tabName) {
+      ['tests', 'mutants', 'explanations'].forEach(name => {
+        const panel = document.getElementById(`tab-panel-${name}`);
+        const btn = document.getElementById(`tab-btn-${name}`);
+        if (name === tabName) {
+          panel.classList.remove('hidden');
+          btn.className = 'tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-sky-400 text-sky-300 bg-slate-800/70 transition whitespace-nowrap';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap';
+        }
+      });
+    }
+
+    function runTestTrustPipeline(hardenAfter = false) {
+      if (isRunning) return;
+      isRunning = true;
+
+      const statusBox = document.getElementById('execution-status-box');
+      const stepLabel = document.getElementById('execution-step-label');
+      const percentLabel = document.getElementById('execution-percent');
+      const progressBar = document.getElementById('execution-progress-bar');
+      const runBtn = document.getElementById('run-pipeline-btn');
+
+      statusBox.classList.remove('hidden');
+      runBtn.disabled = true;
+      runBtn.classList.add('opacity-70');
+
+      const steps = [
+        { pct: 20, text: "[1/5] Parsing Java AST & Maven pom.xml..." },
+        { pct: 45, text: "[2/5] Generating JUnit 5 test cases via LLM..." },
+        { pct: 65, text: "[3/5] Running mvn test & JaCoCo bytecode agent..." },
+        { pct: 88, text: "[4/5] Injecting PIT mutators & evaluating kills..." },
+        { pct: 100, text: "[5/5] Synthesizing AI Trust Explanations..." }
+      ];
+
+      let idx = 0;
+      const interval = setInterval(() => {
+        if (idx < steps.length) {
+          stepLabel.textContent = steps[idx].text;
+          percentLabel.textContent = `${steps[idx].pct}%`;
+          progressBar.style.width = `${steps[idx].pct}%`;
+          idx++;
+        } else {
+          clearInterval(interval);
+          if (hardenAfter) {
+            isHardened = true;
+          }
+          renderDashboard();
+          isRunning = false;
+          runBtn.disabled = false;
+          runBtn.classList.remove('opacity-70');
+          setTimeout(() => statusBox.classList.add('hidden'), 1200);
+          showToast(hardenAfter
+            ? "AI-strengthened JUnit 5 suite verified by PIT!"
+            : "TestTrust AI audit completed.", "success");
+        }
+      }, 320);
+    }
+
+    function strengthenTestsWithAI() {
+      if (isHardened || isRunning) return;
+      runTestTrustPipeline(true);
+    }
+
+    function copyTestCode() {
+      const code = document.getElementById('junit-code-block').textContent;
+      const temp = document.createElement('textarea');
+      temp.value = code;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast("JUnit 5 test code copied to clipboard.", "info");
+    }
+
+    function exportReport() {
+      const scenario = SCENARIOS[currentPresetKey];
+      const data = isHardened ? scenario.hardened : scenario.initial;
+      const report = {
+        platform: "TestTrust AI",
+        timestamp: new Date().toISOString(),
+        targetClass: scenario.fileName,
+        mode: isHardened ? "AI-Strengthened Suite" : "Initial AI-Generated Suite",
+        metrics: {
+          jacocoLineCoveragePercent: data.lineCov,
+          jacocoBranchCoveragePercent: data.branchCov,
+          pitMutationScorePercent: data.mutationScore,
+          killedMutants: data.killed,
+          survivedMutants: data.survived,
+          verdict: data.verdict
+        },
+        mutants: data.mutants
+      };
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `testtrust-audit-${currentPresetKey}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Exported deterministic audit JSON report.", "success");
+    }
+  </script>
+</body>
+</html>
